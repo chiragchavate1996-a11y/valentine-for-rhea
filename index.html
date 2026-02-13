@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>💎 A Special Question 💎</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Poppins', sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+
+        .container {
+            width: 100vw;
+            height: 100vh;
+            display: grid;
+            gap: 15px;
+            transition: background 0.5s ease;
+            position: relative;
+        }
+
+        .container.party-mode {
+            animation: strobe 0.3s infinite;
+        }
+
+        .container.falling {
+            background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+        }
+
+        .cell {
+            cursor: pointer;
+            border-radius: 12px;
+            overflow: hidden;
+            transition: transform 0.3s ease;
+            position: relative;
+            background: rgba(255, 255, 255, 0.1);
+            backdrop-filter: blur(10px);
+        }
+
+        .cell:hover {
+            transform: scale(1.05);
+        }
+
+        .cell.special {
+            box-shadow: 0 0 20px rgba(255, 100, 150, 0.8);
+            animation: glow 1.5s ease-in-out infinite;
+        }
+
+        .cell.special::after {
+            content: '❤️';
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            font-size: 1.5rem;
+            animation: pulse 1.5s ease-in-out infinite;
+            z-index: 10;
+        }
+
+        .cell.party::before {
+            content: '🎉';
+            position: absolute;
+            top: 8px;
+            left: 8px;
+            font-size: 1.5rem;
+            z-index: 10;
+        }
+
+        .item {
+            width: 100%;
+            height: 100%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 4rem;
+            transition: transform 1s ease;
+        }
+
+        .cell:hover .item {
+            transform: rotate(360deg);
+        }
+
+        .cell.rotated .item {
+            transform: rotate(360deg);
+        }
+
+        .party-mode .item {
+            animation: spin 1s linear infinite;
+        }
+
+        .falling .cell {
+            animation: fall 1.5s ease-in forwards;
+        }
+
+        .rising .cell {
+            opacity: 0;
+            transform: translateY(100vh);
+            animation: rise 1.5s ease-out forwards;
+        }
+
+        .dialog {
+            display: none;
+            position: fixed;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            width: min(500px, 85vw);
+            min-height: 300px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(20px);
+            border-radius: 24px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2), inset 0 1px 0 rgba(255, 255, 255, 0.4);
+            padding: 3rem 2rem;
+            z-index: 1000;
+            text-align: center;
+            color: white;
+            font-size: 2rem;
+            font-weight: 600;
+        }
+
+        .dialog.active {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            animation: slideIn 0.5s ease;
+        }
+
+        .close-button {
+            position: absolute;
+            top: 1rem;
+            right: 1rem;
+            background: none;
+            border: none;
+            color: white;
+            font-size: 1.8rem;
+            cursor: pointer;
+            opacity: 0.7;
+            transition: opacity 0.2s;
+        }
+
+        .close-button:hover {
+            opacity: 1;
+        }
+
+        .dialog-buttons {
+            display: flex;
+            gap: 1rem;
+            position: absolute;
+            bottom: 2rem;
+        }
+
+        .dialog-button {
+            font-family: 'Poppins', sans-serif;
+            font-size: 1rem;
+            padding: 0.7rem 1.5rem;
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(10px);
+            color: white;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+
+        .dialog-button:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.05);
+        }
+
+        .dialog-button.runaway {
+            position: relative;
+            transition: transform 0.2s ease;
+        }
+
+        .overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+
+        .overlay.active {
+            display: block;
+        }
+
+        .hint {
+            position: fixed;
+            top: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(255, 255, 255, 0.2);
+            backdrop-filter: blur(10px);
+            padding: 1rem 2rem;
+            border-radius: 50px;
+            color: white;
+            font-size: 0.9rem;
+            z-index: 100;
+            animation: fadeInOut 4s ease-in-out;
+            pointer-events: none;
+        }
+
+        @keyframes fadeInOut {
+            0%, 100% { opacity: 0; }
+            10%, 90% { opacity: 1; }
+        }
+
+        @keyframes strobe {
+            0%, 100% { background: #000; }
+            50% { background: #fff; }
+        }
+
+        @keyframes glow {
+            0%, 100% { box-shadow: 0 0 8px rgba(255, 100, 150, 0.4); }
+            50% { box-shadow: 0 0 25px rgba(255, 100, 150, 1); }
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 0.5; transform: scale(1); }
+            50% { opacity: 1; transform: scale(1.3); }
+        }
+
+        @keyframes spin {
+            from { transform: rotate(0deg); }
+            to { transform: rotate(360deg); }
+        }
+
+        @keyframes fall {
+            0% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(100vh) rotate(45deg);
+                opacity: 0;
+            }
+        }
+
+        @keyframes rise {
+            0% {
+                transform: translateY(100vh) rotate(45deg);
+                opacity: 0;
+            }
+            100% {
+                transform: translateY(0) rotate(0deg);
+                opacity: 1;
+            }
+        }
+
+        @keyframes slideIn {
+            from {
+                transform: translate(-50%, -60%);
+                opacity: 0;
+            }
+            to {
+                transform: translate(-50%, -50%);
+                opacity: 1;
+            }
+        }
+
+        @media (max-width: 767px) {
+            .dialog {
+                min-height: 250px;
+                padding: 2rem 1.5rem;
+                font-size: 1.5rem;
+            }
+            .item {
+                font-size: 2.5rem;
+            }
+            .cell.special::after {
+                font-size: 1rem;
+            }
+            .hint {
+                font-size: 0.8rem;
+                padding: 0.8rem 1.5rem;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="hint">💡 Find the item with a glowing heart and click it! 💕</div>
+    <div class="overlay" id="overlay"></div>
+    <div class="container" id="container"></div>
+    
+    <div class="dialog" id="dialog">
+        <button class="close-button" onclick="closeDialog()">×</button>
+        <div id="dialogContent"></div>
+    </div>
+
+    <script>
+        // Luxury items: dark chocolates, diamond jewelry, watches, clothes, perfumes
+        const luxuryItems = [
+            '🍫', // Dark chocolate
+            '💎', // Diamond
+            '💍', // Diamond ring
+            '⌚', // Watch
+            '👗', // Dress
+            '👚', // Blouse
+            '💐', // Perfume (flowers)
+            '🌹', // Perfume (rose)
+            '✨', // Sparkle (jewelry)
+            '🔷', // Diamond blue
+            '🔹', // Diamond small
+            '💠', // Diamond pattern
+            '👘', // Kimono/clothing
+            '🥻', // Sari
+            '🌺', // Perfume (hibiscus)
+            '🌸', // Perfume (cherry blossom)
+            '🌷', // Perfume (tulip)
+            '🏵️', // Perfume (rosette)
+        ];
+
+        const container = document.getElementById('container');
+        const dialog = document.getElementById('dialog');
+        const overlay = document.getElementById('overlay');
+        const dialogContent = document.getElementById('dialogContent');
+        
+        let cells = [];
+        let specialCell = 0;
+        let partyCell = 0;
+        let dialogStep = 'ask';
+        let partyMode = false;
+        let rotatedCells = new Set();
+        let runawayButton;
+
+        function setupGrid() {
+            const width = window.innerWidth;
+            const height = window.innerHeight;
+            const isMobile = width < 768;
+            const targetSize = isMobile ? 75 : 120;
+            const gap = 15;
+            
+            const cols = Math.floor(width / (targetSize + gap));
+            const rows = Math.ceil(height / (targetSize + gap));
+            const cellSize = (width - (cols - 1) * gap) / cols;
+            
+            container.style.gridTemplateColumns = `repeat(${cols}, ${cellSize}px)`;
+            container.style.gridTemplateRows = `repeat(${rows}, ${cellSize}px)`;
+            
+            const totalCells = cols * rows;
+            container.innerHTML = '';
+            cells = [];
+            
+            specialCell = Math.floor(Math.random() * totalCells);
+            partyCell = Math.floor(Math.random() * totalCells);
+            while (partyCell === specialCell) {
+                partyCell = Math.floor(Math.random() * totalCells);
+            }
+            
+            for (let i = 0; i < totalCells; i++) {
+                const cell = document.createElement('div');
+                cell.className = 'cell';
+                if (i === specialCell) cell.classList.add('special');
+                if (i === partyCell) cell.classList.add('party');
+                
+                const item = document.createElement('div');
+                item.className = 'item';
+                item.textContent = luxuryItems[Math.floor(Math.random() * luxuryItems.length)];
+                item.style.animationDelay = `${Math.random() * 0.8}s`;
+                
+                cell.appendChild(item);
+                cell.onclick = () => handleCellClick(i);
+                container.appendChild(cell);
+                cells.push(cell);
+            }
+        }
+
+        function handleCellClick(index) {
+            if (index === specialCell) {
+                openDialog();
+            } else if (index === partyCell) {
+                toggleParty();
+            } else {
+                toggleRotation(index);
+            }
+        }
+
+        function toggleRotation(index) {
+            if (rotatedCells.has(index)) {
+                rotatedCells.delete(index);
+                cells[index].classList.remove('rotated');
+            } else {
+                rotatedCells.add(index);
+                cells[index].classList.add('rotated');
+            }
+        }
+
+        function toggleParty() {
+            partyMode = !partyMode;
+            if (partyMode) {
+                container.classList.add('party-mode');
+            } else {
+                container.classList.remove('party-mode');
+            }
+        }
+
+        function openDialog() {
+            dialogStep = 'ask';
+            showAskDialog();
+            dialog.classList.add('active');
+            overlay.classList.add('active');
+        }
+
+        function closeDialog() {
+            dialog.classList.remove('active');
+            overlay.classList.remove('active');
+            dialogStep = 'ask';
+            if (partyMode) {
+                partyMode = false;
+                container.classList.remove('party-mode');
+            }
+            container.classList.remove('falling', 'rising');
+        }
+
+        function showAskDialog() {
+            dialogContent.innerHTML = `
+                <div style="margin-bottom: 1rem;">Rhea, will you be my valentine? 💕</div>
+                <div class="dialog-buttons">
+                    <button class="dialog-button" onclick="answerYes()">Yes! 💖</button>
+                    <button class="dialog-button" onclick="answerNo()">No 😢</button>
+                </div>
+            `;
+        }
+
+        function answerYes() {
+            dialogContent.innerHTML = `
+                <div style="margin-bottom: 1rem;">🎉 YESSSSS!!! 🎉</div>
+                <div style="font-size: 1rem; margin-top: 1rem; opacity: 0.9;">You just made me the happiest! 💕✨</div>
+            `;
+            partyMode = true;
+            container.classList.add('party-mode');
+            
+            // Confetti effect
+            for (let i = 0; i < 100; i++) {
+                setTimeout(() => createConfetti(), i * 30);
+            }
+        }
+
+        function answerNo() {
+            dialogStep = 'sure';
+            container.classList.add('falling');
+            container.classList.remove('rising');
+            
+            setTimeout(() => {
+                dialogContent.innerHTML = `
+                    <div style="margin-bottom: 1rem;">Are you absolutely sure? 🥺</div>
+                    <div class="dialog-buttons">
+                        <button class="dialog-button runaway" id="runawayBtn" onmouseover="moveRunaway()" onclick="tryToClickRunaway()">Yes, I'm sure</button>
+                        <button class="dialog-button" onclick="sureNo()">Wait, No!</button>
+                    </div>
+                `;
+                runawayButton = document.getElementById('runawayBtn');
+            }, 100);
+        }
+
+        function moveRunaway() {
+            if (!runawayButton) return;
+            const dialogRect = dialog.getBoundingClientRect();
+            const btnRect = runawayButton.getBoundingClientRect();
+            
+            const maxX = dialogRect.width - btnRect.width - 100;
+            const maxY = 100;
+            
+            const x = (Math.random() * maxX) - maxX/2;
+            const y = (Math.random() * maxY) - maxY/2;
+            
+            runawayButton.style.transform = `translate(${x}px, ${y}px)`;
+        }
+
+        function tryToClickRunaway() {
+            moveRunaway();
+        }
+
+        function sureNo() {
+            container.classList.remove('falling');
+            container.classList.add('rising');
+            setTimeout(() => {
+                dialogStep = 'ask';
+                showAskDialog();
+                container.classList.remove('rising');
+            }, 1500);
+        }
+
+        function createConfetti() {
+            const confetti = document.createElement('div');
+            confetti.style.position = 'fixed';
+            confetti.style.left = Math.random() * 100 + '%';
+            confetti.style.top = '-10px';
+            confetti.style.fontSize = '2rem';
+            confetti.textContent = ['💕', '💖', '💗', '💓', '💝', '❤️', '💎', '✨'][Math.floor(Math.random() * 8)];
+            confetti.style.zIndex = '9999';
+            confetti.style.pointerEvents = 'none';
+            confetti.style.animation = `fall ${2 + Math.random() * 2}s linear`;
+            document.body.appendChild(confetti);
+            
+            setTimeout(() => confetti.remove(), 4000);
+        }
+
+        setTimeout(() => {
+            const hint = document.querySelector('.hint');
+            if (hint) hint.style.display = 'none';
+        }, 4000);
+
+        window.addEventListener('resize', setupGrid);
+        setupGrid();
+    </script>
+</body>
+</html>
